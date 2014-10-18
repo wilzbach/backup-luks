@@ -4,6 +4,11 @@ backup-luks
 Convenient wrapper for running encrypted backups with rsync and as cronjobs.
 Uses `dm-crypt`.
 
+Install
+-------
+
+[Arch package](https://aur.archlinux.org/packages/backup-luks/)
+
 How to use
 ----------
 
@@ -59,10 +64,9 @@ Requirements
 
 optional:
 
-* `gdisk` (for the partition)
-* python + gtk3 (for notification icons)
+* `gdisk` (for the partitioning step)
+* `python`, `gtk3`, `python-gobject` (for notification icons)
 * [cronic](http://habilis.net/cronic/) (for cronjobs)
-
 
 Cronjobs
 --------
