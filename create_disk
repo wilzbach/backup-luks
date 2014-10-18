@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# License: GPLv3
+
+DEV_ENC="$1" # partition to use e.g. /dev/sdc1
+SECURE_KEY="$2"  # make sure the filesystem underneath is encrypted
+
+# Make sure only root can run our script
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+if [[ ! -e $DEV_ENC  ]]; then
+	echo "your device does not exist"
+	exit 1;
+fi
+
+if [ -t 0 ]; then
+  # interactive mode
+
+  # read pw from tty
+  function enterpw {
+   unset password
+   prompt="$1 "
+   while IFS= read -p "$prompt" -r -s -n 1 char
+   do
+       if [[ $char == $'\0' ]]
+       then
+           break
+       fi
+       prompt='*'
+       password+="$char"
+   done
+   echo $password
+  }
+
+  pw_first=$(enterpw "Enter password ")
+  echo
+  pw_second=$(enterpw "Verify password")
+  echo
+  
+  if [[ $pw_first == $pw_second ]] ; then
+  	PASSWORD=$pw_first
+  else
+  	echo "Passwords do not match. Try again"
+  	exit 1
+  fi
+else
+	# stdin
+	read PASSWORD
+fi
+
+function verify {
+ read -r -p "Are you sure? [y/N] " response
+ if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]] ; then
+	 echo ""
+ else
+ 	 exit 0;
+ fi
+}
+
+
+# normally you don't need the rest
+
+MAPPER_TMP="tmp_mount"
+
+# load LUKS module (kernel >= 2.6)
+modprobe dm-crypt
+
+(echo  $PASSWORD; echo $PASSWORD) | cryptsetup luksFormat "$DEV_ENC"
+
+echo "adding luks key"
+dd if=/dev/urandom of="$SECURE_KEY" bs=1024 count=4 # luks key
+chmod 600 "$SECURE_KEY"
+echo $PASSWORD | cryptsetup luksAddKey "$DEV_ENC" "$SECURE_KEY"
+
+echo "formatting drive"
+cryptsetup luksOpen "$DEV_ENC" "$MAPPER_TMP" --key-file "$SECURE_KEY"
+mkfs.ext4 "/dev/mapper/$MAPPER_TMP"
+
+echo "init backup dir"
+
+# creating backup dir (optional)
+MOUNT_DIR="mnt_dir"
+mkdir -p "$MOUNT_DIR"
+mount "/dev/mapper/$MAPPER_TMP" "$MOUNT_DIR"
+
+sleep 2s
+
+mkdir "$MOUNT_DIR/backup"
+umount "$MOUNT_DIR"
+rmdir "$MOUNT_DIR"
+
+# final cleanup
+cryptsetup luksClose "$MAPPER_TMP"
+
+# output uuid
+blkid "$DEV_ENC"

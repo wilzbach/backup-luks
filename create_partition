@@ -1,0 +1,67 @@
+#!/bin/bash
+# License: GPLv3
+
+# this script comes without WARRANTY
+# USE WITH CARE
+# WARNIG: this is untested for MBR drives (e.g. Windows)
+
+# Usage: ./create_parition <dev>  
+# <dev> could be /dev/sdc
+
+DEV_ENC="$1" # e.g. /dev/sdb
+
+function verify {
+ read -r -p "Are you sure? [y/N] " response
+ if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]] ; then
+	 echo ""
+ else
+ 	 exit 0;
+ fi
+}
+
+# Make sure only root can run our script
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+if [[ -z $DEV_ENC  ]]; then
+	echo "please specify your device for the partitioning"
+	exit 1;
+fi
+if [[ ! -e $DEV_ENC  ]]; then
+	echo "your device does not exist"
+	exit 1;
+fi
+
+if  ! blkid "$DEV_ENC" ; then 
+echo "No existing partition for $DEV_ENC. Will create new GPT record."
+verify
+
+echo "o
+Y
+n
+1
+
+
+
+w
+Y"| gdisk $DEV_ENC
+
+else 
+	echo "Will overwrite partition for $DEV_ENC"
+	verify
+
+echo "o
+Y
+n
+1
+
+
+
+w
+Y"| gdisk $DEV_ENC
+
+fi
+
+

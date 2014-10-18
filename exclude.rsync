@@ -1,0 +1,139 @@
+######################
+# Global folders 
+######################
+/dev/*
+/proc/*
+/sys/*
+/tmp/*
+/run/*
+/mnt/*
+/media/*
+
+# global tmp
+/var/lib/tor/*
+/var/spool/cron/*
+/var/spool/cups/*
+/var/spool/cups-pdf/*
+
+##################
+# etc
+##################
+/etc/*.log
+/etc/*.bak
+/etc/*~
+
+######################
+# Include here all cache files & temporary
+# NO generic exclude of tmp
+######################
+
+/home/*/.thumbnails
+/home/*/.gvfs
+/home/*/.inputrc
+/home/*/.gksu.lock
+/home/*/.history
+*/.cache/
+*/.ccache/
+/home/*/.cache/
+/home/*/.cache/chromium/*
+/home/*/.ccache/
+
+.bup/index-cache/
+.bup/bupindex*
+.davfs2/cache/
+
+.local/share/recently-used*
+.local/share/zeitgeist/
+
+.svn/tmp
+
+# no bootstrap
+bootstrap.dat.partial
+
+# locks
+flintlock
+main.lock
+
+##############################
+# common applications cache
+#############################
+
+# Exclude backup text files
+#*~
+\#*\#
+
+# Commonly distributed Mac OS X cache
+.DS_Store
+
+# Commonly distributed Windows cache
+Thumbs.db
+
+# Adobe Reader
+/home/*/.adobe/**/AssetCache/
+/home/*/.adobe/**/Cache/
+/home/*/.adobe/**/Temp/
+/home/*/.adobe/**/UserCache.bin
+
+# Gimp
+/home/*/.gimp-*/tmp
+/home/*/.gimp-*/swap
+
+# Mozilla Firefox
+/home/*/.mozilla/firefox/*.default/Cache/*
+/home/*/.mozilla/firefox/*/lock
+/home/*/.mozilla/firefox/*/.parentlock
+/home/*/.thunderbird/*/lock
+
+# recoll
+/home/*/.recoll/mboxcache
+/home/*/.recoll/xapiandb
+
+# small stuff
+/home/*/.gem/ruby/*/cache
+/home/*/.gradle/caches
+/home/*/.googleearth/Cache/
+/home/*/.googleearth/Temp/
+/home/*/.opera-backup/cache
+/home/*/.AndroidStudioPreview/system/tmp
+/home/*/.config/libreoffice/4/user/extensions/tmp
+/home/*/.IdeaIC13/system/tmp
+/home/*/.java/deployment/tmp/
+activemq/tmp/
+/home/*/.android/cache/
+/home/*/.ssh/sockets/*
+/home/*/.dbus/session-bus/
+
+# vim
+/home/*/.vim_mru_files
+/home/*/.viminfo
+
+/home/*/.gnupg/random_seed
+
+######################
+# root
+######################
+/root/.cache/
+/root/Downloads/
+/root/Dropbox
+/root/.local/share/Trash
+/root/.Trash
+
+######################
+# other 
+######################
+.local/share/Trash
+lost+found/
+.Trash
+
+######################
+# Log Files
+######################
+*.log
+.xsession-errors*
+/home/*/.AndroidStudioPreview/system/log
+/home/*/.jitsi/log
+/var/cache/*
+/var/log/*
+/var/tmp/*
+/var/systemd/coredump/*
+/var/lock/*

@@ -1,0 +1,149 @@
+#!/bin/bash
+# License: GPLv3
+
+#python2 -c 'import gtk; print gtk.icon_theme_get_default().lookup_icon("evolution", int('32'), ()).get_filename();'
+ICON_NOTIFY=$(python -c "from gi.repository import Gtk; print(Gtk.IconTheme.get_default().lookup_icon('emblem-synchronizing', 48, Gtk.IconLookupFlags.USE_BUILTIN).get_filename());")
+#NOTIFY_ICON=$(su "$USER" -c "python -c 'from gi.repository import Gtk; print(Gtk.IconTheme.get_default().lookup_icon(\"emblem-synchronizing\", 48, Gtk.IconLookupFlags.USE_BUILTIN).get_filename());'")
+#ICON_NOTIFY=/usr/share/icons/Adwaita/48x48/emblems/emblem-synchronizing.png
+
+# Make sure only root can run our script
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+# umount disk and luks
+function umountDir {
+	umount "$mountDir"
+	cryptsetup luksClose /dev/mapper/"$mapperName"
+}
+
+# mount disk with luks
+function mountCrypt {
+	cryptsetup luksOpen $devUUID --key-file="$cryptKeyFile" "$mapperName"
+	fsck /dev/mapper/"$mapperName" -y
+}
+
+# mounts the container
+function mountContainer {
+	mkdir -p "$mountDir"
+
+	type=$(sudo blkid /dev/mapper/"$mapperName" | awk ' { print $(NF) } ' | cut -d '"' -f 2 )
+	echo "Filesys to check: $type"
+
+	if [ "$type" == "ext4" ] ; then
+		mount -o noatime,data=writeback,errors=continue /dev/mapper/"$mapperName" "$mountDir"
+	elif [ "$type" == "btrfs" ] ; then
+		mount -o noatime,ro,fatal_errors=bug /dev/mapper/"$mapperName" "$mountDir"
+	elif [ "$type" == "xfs" ] ; then
+		mount /dev/mapper/"$mapperName" "$mountDir"
+	fi
+}
+
+function help {
+cat <<EOF
+Usage: $0 [options]
+
+-h		this help text
+-r		remounts the luks container
+-u 		umounts the luks container
+-c 		cron option (ignores error for non-available device)
+EOF
+}
+
+while getopts "ruch" opt; do
+  case $opt in
+    r)
+      echo "remounting $mountDir" >&2
+	  umountDir
+	  ;;
+	u)
+	  echo "umounting $mountDir" >&2
+	  umountDir
+      ;;
+	c)
+	  echo "CRON MODE" 
+	  CRON=1
+	  ;;
+	h)
+	  help
+	  exit 0
+	  ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      help
+      exit 1
+      ;;
+  esac
+done
+
+# for device
+if [ ! -e $devUUID ] ; then
+	echo "device not plugged in"
+	# exit softly for the cron
+	if [[ $CRON ]] ; then
+		exit 0
+	else 
+		exit 1
+	fi
+fi
+
+# mount disk with luks
+if [ ! -e /dev/mapper/"$mapperName" ] ; then
+	mountCrypt
+fi
+
+
+# mount the mapper somewhere
+if [ ! -e "$syncDir" ] ; then
+	mountContainer
+fi
+
+# check for read-only fs and input/output error
+if  ! touch "$syncDir" ; then 
+	echo "mount error $syncDir"
+	echo "trying to remount"
+
+	# remount
+	umountDir
+	mountCrypt
+	mountContainer
+fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# set exclude file if empty
+if [[ -z EXCLUDE_FROM_FILE ]] ; then
+	EXCLUDE_FROM_FILE="$DIR/exclude.rsync"
+fi
+
+# run rsync
+if [ -d "$syncDir" ] ; then
+	echo "" > "$logName"
+	syncDirFull="$syncDir/$bakFolder"
+	mkdir -p "$syncDirFull"
+
+	echo "Running rsync. DO NOT KILL"
+
+	# run without compression
+	# run without partial
+	/usr/bin/ionice -c 3 /usr/bin/nice -19 /usr/bin/rsync --archive --times  \
+	--links --perms -v --delete --quiet --log-file "$logName" --stats  \
+	--exclude-from "$EXCLUDE_FROM_FILE" --delete-excluded "$bakDir" $syncDirFull; 
+
+	# print stats
+	tail -n 30 "$logName" | grep -A 30 "Number of files"
+
+	#### BEGIN: do cleanup stuff ##############
+
+	# restore mount points
+	if [[ "$bakDir" == "/" ]] ; then
+		find /mnt -mount -printf '%P\n' | xargs -I {} mkdir -p "$syncDirFull/mnt/{}"
+	fi
+
+	#### END: cleanup ######################
+
+	notify-send "Backup complete" "Backup complete" -t 8000 -i "$ICON_NOTIFY"
+else
+	echo "Mount point not available"
+	exit 1
+fi

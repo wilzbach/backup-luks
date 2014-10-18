@@ -1,0 +1,23 @@
+#!/bin/bash
+# License: GPLv3
+
+# LUKS
+# 	 UUID: run lsblk -o name,mountpoint,uuid
+devUUID=/dev/disk/by-uuid/2282a932-f6bc-46ff-88eb-9b6dc964d7c3
+mapperName="crypt_mapper_name"
+cryptKeyFile=o
+
+# Backup
+bakDir="/"
+
+# Mount
+mountDir="/mnt/hd/usb"
+syncDir="$mountDir/backup/"
+bakFolder="archinovo_ssd_full_"`date +"%Y-%m"` # rotates every month
+
+# Logs
+logName="/home/xsebi/logs/rsync/luks.samsung.log"
+
+# call main script
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$DIR"/backup-luks
