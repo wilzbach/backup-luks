@@ -145,12 +145,27 @@ if [ -d "$syncDir" ] ; then
 	syncDirFull="$syncDir/$bakFolder"
 	mkdir -p "$syncDirFull"
 
+	if [[ $withHardLinks ]] ; then
+		# rotate every month
+		rotatePattern=`date +"%Y-%m"`
+		if ! [[ $(ls "$syncDir" | grep "$rotatePattern" ) ]] ; then 
+			echo "$rotatePattern not found"
+			echo "rotating hard disk"
+		fi
+	
+		# pick the latest dir to symlink
+		linkDestDir=$(ls -t -r "$syncDir" | head -n 1)
+		HARDLINKS="--link-dest $syncDir/$linkDestDir"
+		echo "hardlink parent: $linkDestDir"
+	fi
+
 	echo "Running rsync. DO NOT KILL"
 
 	# run without compression
 	# run without partial
 	/usr/bin/ionice -c 3 /usr/bin/nice -19 /usr/bin/rsync --archive --times  \
 	--links --perms -v --delete --quiet --log-file "$logName" --stats  \
+	$HARDLINKS \
 	--exclude-from "$EXCLUDE_FROM_FILE" --delete-excluded "$bakDir" $syncDirFull; 
 
 	# print stats
