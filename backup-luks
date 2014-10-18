@@ -151,12 +151,12 @@ if [ -d "$syncDir" ] ; then
 		if ! [[ $(ls "$syncDir" | grep "$rotatePattern" ) ]] ; then 
 			echo "$rotatePattern not found"
 			echo "rotating hard disk"
+		else
+			# pick the latest dir to symlink
+			linkDestDir=$(ls -t -r "$syncDir" | head -n 1)
+			HARDLINKS="--link-dest $syncDir/$linkDestDir"
+			echo "Hardlink_parent: $linkDestDir"
 		fi
-	
-		# pick the latest dir to symlink
-		linkDestDir=$(ls -t -r "$syncDir" | head -n 1)
-		HARDLINKS="--link-dest $syncDir/$linkDestDir"
-		echo "Hardlink_parent: $linkDestDir"
 	fi
 
 	echo "Running rsync. DO NOT KILL"
