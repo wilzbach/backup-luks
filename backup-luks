@@ -165,7 +165,7 @@ if [ -d "$syncDir" ] ; then
 
 	#### END: cleanup ######################
 
-	notify "Backup complete" "Backup complete" 8000 "$ICON_NOTIFY"
+	notify "Backup complete" "$mapperName" 8000 "$ICON_NOTIFY"
 else
 	echo "Mount point not available"
 	exit 1
