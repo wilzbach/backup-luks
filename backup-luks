@@ -156,7 +156,7 @@ if [ -d "$syncDir" ] ; then
 		# pick the latest dir to symlink
 		linkDestDir=$(ls -t -r "$syncDir" | head -n 1)
 		HARDLINKS="--link-dest $syncDir/$linkDestDir"
-		echo "hardlink parent: $linkDestDir"
+		echo "Hardlink_parent: $linkDestDir"
 	fi
 
 	echo "Running rsync. DO NOT KILL"

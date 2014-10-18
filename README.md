@@ -49,6 +49,23 @@ echo "awesome_pwd" | create_disk /dev/sdb1 /path/to/place/your/secure/luks/keys
 
 5. Optional: Setup cronjobs
 
+Hardlinks
+------
+
+Rsync can create a new folder and hardlink unchanged folders.
+This allows you to have an incremental snapshot versionion (like Time Machine).
+
+`yourconfig`
+
+```
+bakFolder="archi_"`date +"%x_%H_%M"`
+withHardLinks=1
+```
+
+rsync info about `--link-dest`
+
+> This option behaves like --copy-dest, but unchanged files are hard linked from DIR to the destination directory. The files must be identical in all preserved attributes (e.g. permissions, possibly ownership) in order for the files to be linked together. This option works best when copying into an empty destination hierarchy
+
 Security
 ------------
 
