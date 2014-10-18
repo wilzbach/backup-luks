@@ -18,6 +18,9 @@ bakFolder="archinovo_ssd_full_"`date +"%Y-%m"` # rotates every month
 # Logs
 logName="/home/xsebi/logs/rsync/luks.samsung.log"
 
+# Other (optional)
+userNotify="xsebi"
+
 # call main script
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$DIR"/backup-luks

@@ -1,10 +1,22 @@
 #!/bin/bash
 # License: GPLv3
 
+export DISPLAY=:0
+NotifyPath="/usr/bin/notify-send"
+
 #python2 -c 'import gtk; print gtk.icon_theme_get_default().lookup_icon("evolution", int('32'), ()).get_filename();'
-ICON_NOTIFY=$(python -c "from gi.repository import Gtk; print(Gtk.IconTheme.get_default().lookup_icon('emblem-synchronizing', 48, Gtk.IconLookupFlags.USE_BUILTIN).get_filename());")
-#NOTIFY_ICON=$(su "$USER" -c "python -c 'from gi.repository import Gtk; print(Gtk.IconTheme.get_default().lookup_icon(\"emblem-synchronizing\", 48, Gtk.IconLookupFlags.USE_BUILTIN).get_filename());'")
+#ICON_NOTIFY=$(python -c "from gi.repository import Gtk; print(Gtk.IconTheme.get_default().lookup_icon('emblem-synchronizing', 48, Gtk.IconLookupFlags.USE_BUILTIN).get_filename());")
 #ICON_NOTIFY=/usr/share/icons/Adwaita/48x48/emblems/emblem-synchronizing.png
+
+# choose a nice notification icon
+if [[ "$userNotify" ]] ; then
+	ICON_NOTIFY_RAW=$(su "$userNotify" -c "python3 -c 'from gi.repository import Gtk; print(Gtk.IconTheme.get_default().lookup_icon(\"emblem-synchronizing\", 48, Gtk.IconLookupFlags.USE_BUILTIN).get_filename());'")
+	if [[ $ICON_NOTIFY_RAW ]] ; then
+		ICON_NOTIFY="-i $ICON_NOTIFY_RAW"
+	fi
+	#echo "icon:" $ICON_NOTIFY
+fi 
+
 
 # Make sure only root can run our script
 if [[ $EUID -ne 0 ]]; then
@@ -116,6 +128,17 @@ if [[ -z EXCLUDE_FROM_FILE ]] ; then
 	EXCLUDE_FROM_FILE="$DIR/exclude.rsync"
 fi
 
+
+notify(){
+	if [[ "$userNotify" ]] ; then
+		# we know the user to be notified
+		su "$userNotify" -c "$NotifyPath -u normal '$1' '$2' -t '$3' $4 $5"
+	else
+		# hope for the best
+		"$NotifyPath -u normal '$1' '$2' -t '$3' $NOTIFY_ICON"
+	fi
+}
+
 # run rsync
 if [ -d "$syncDir" ] ; then
 	echo "" > "$logName"
@@ -142,7 +165,7 @@ if [ -d "$syncDir" ] ; then
 
 	#### END: cleanup ######################
 
-	notify-send "Backup complete" "Backup complete" -t 8000 -i "$ICON_NOTIFY"
+	notify "Backup complete" "Backup complete" 8000 "$ICON_NOTIFY"
 else
 	echo "Mount point not available"
 	exit 1
