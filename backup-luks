@@ -83,7 +83,7 @@ while getopts "ruchkm" opt; do
 	  ;;
 	k)
 	  echo "SYNC MODE" 
-	  NO_RO=1
+	  NO_ROTATE=1
 	  ;;
 	c)
 	  echo "CRON MODE" 
@@ -170,7 +170,7 @@ if [ -d "$syncDir" ] ; then
 	fi
 
 	# no rotate flag (using newest folder to sync)
-	if [[ $NO_ROATE ]] ; then
+	if [[ $NO_ROTATE ]] ; then
 		bakFolder=$(ls -t "$syncDir" | head -n 1)
 		echo "Sync to: $bakFolder"
 	fi
