@@ -60,11 +60,12 @@ Usage: $0 [options]
 -r		remounts the luks container
 -u 		umounts the luks container
 -m 		mounts the luks container without rsync
+-k 		do not roate, sync to the newest existing folder
 -c 		cron option (ignores error for non-available device)
 EOF
 }
 
-while getopts "ruch" opt; do
+while getopts "ruchkm" opt; do
   case $opt in
     r)
       echo "remounting $mountDir" >&2
@@ -79,6 +80,10 @@ while getopts "ruch" opt; do
 	  umountDir
 	  mountCrypt
 	  mountContainer
+	  ;;
+	k)
+	  echo "SYNC MODE" 
+	  NO_RO=1
 	  ;;
 	c)
 	  echo "CRON MODE" 
@@ -149,9 +154,8 @@ notify(){
 # run rsync
 if [ -d "$syncDir" ] ; then
 	echo "" > "$logName"
-	syncDirFull="$syncDir/$bakFolder"
 
-	if [[ $withHardLinks ]] ; then
+	if [[ $withHardLinks ]] && [[ -z $NO_ROTATE ]] ; then
 		# rotate every month
 		rotatePattern=`date +"%Y-%m"`
 		if ! [[ $(ls "$syncDir" | grep "$rotatePattern" ) ]] ; then 
@@ -165,9 +169,16 @@ if [ -d "$syncDir" ] ; then
 		fi
 	fi
 
-	echo "Running rsync. DO NOT KILL"
+	# no rotate flag (using newest folder to sync)
+	if [[ $NO_ROATE ]] ; then
+		bakFolder=$(ls -t "$syncDir" | head -n 1)
+		echo "Sync to: $bakFolder"
+	fi
 
+	syncDirFull="$syncDir/$bakFolder"
 	mkdir -p "$syncDirFull"
+
+	echo "Running rsync. DO NOT KILL"
 
 	# run without compression
 	# run without partial
