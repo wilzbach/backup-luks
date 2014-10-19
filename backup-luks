@@ -153,7 +153,7 @@ if [ -d "$syncDir" ] ; then
 			echo "rotating hard disk"
 		else
 			# pick the latest dir to symlink
-			linkDestDir=$(ls -t -r "$syncDir" | head -n 1)
+			linkDestDir=$(ls -t "$syncDir" | head -n 1)
 			HARDLINKS="--link-dest $syncDir/$linkDestDir"
 			echo "Hardlink_parent: $linkDestDir"
 		fi
