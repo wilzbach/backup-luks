@@ -59,6 +59,7 @@ Usage: $0 [options]
 -h		this help text
 -r		remounts the luks container
 -u 		umounts the luks container
+-m 		mounts the luks container without rsync
 -c 		cron option (ignores error for non-available device)
 EOF
 }
@@ -73,6 +74,12 @@ while getopts "ruch" opt; do
 	  echo "umounting $mountDir" >&2
 	  umountDir
       ;;
+	m)
+	  echo "mounting $mountDir" >&2
+	  umountDir
+	  mountCrypt
+	  mountContainer
+	  ;;
 	c)
 	  echo "CRON MODE" 
 	  CRON=1
@@ -143,7 +150,6 @@ notify(){
 if [ -d "$syncDir" ] ; then
 	echo "" > "$logName"
 	syncDirFull="$syncDir/$bakFolder"
-	mkdir -p "$syncDirFull"
 
 	if [[ $withHardLinks ]] ; then
 		# rotate every month
@@ -160,6 +166,8 @@ if [ -d "$syncDir" ] ; then
 	fi
 
 	echo "Running rsync. DO NOT KILL"
+
+	mkdir -p "$syncDirFull"
 
 	# run without compression
 	# run without partial
