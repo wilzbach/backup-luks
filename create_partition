@@ -11,18 +11,18 @@
 DEV_ENC="$1" # e.g. /dev/sdb
 
 function verify {
- read -r -p "Are you sure? [y/N] " response
- if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]] ; then
-	 echo ""
- else
- 	 exit 0;
- fi
+read -r -p "Are you sure? [y/N] " response
+if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]] ; then
+	echo ""
+else
+	exit 0;
+fi
 }
 
 # Make sure only root can run our script
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 1>&2
-   exit 1
+	echo "This script must be run as root" 1>&2
+	exit 1
 fi
 
 if [[ -z $DEV_ENC  ]]; then
@@ -34,22 +34,8 @@ if [[ ! -e $DEV_ENC  ]]; then
 	exit 1;
 fi
 
-if  ! blkid "$DEV_ENC" ; then 
-echo "No existing partition for $DEV_ENC. Will create new GPT record."
-verify
-
-echo "o
-Y
-n
-1
-
-
-
-w
-Y"| gdisk $DEV_ENC
-
-else 
-	echo "Will overwrite partition for $DEV_ENC"
+if [[ ! $(blkid "$DEV_ENC") ]] ||  [[ ! $(blkid "$DEV_ENC" | grep "dos") ]] ; then 
+	echo "No existing partition for $DEV_ENC. Will create new GPT record."
 	verify
 
 echo "o
@@ -62,6 +48,22 @@ n
 w
 Y"| gdisk $DEV_ENC
 
+else 
+	echo "ANTI DOS mode"
+	echo "Will overwrite partition for $DEV_ENC"
+	verify
+
+	# normal usb sticks with DOS
+
+echo "3
+o
+Y
+n
+1
+
+
+
+w
+Y"| gdisk $DEV_ENC
+
 fi
-
-

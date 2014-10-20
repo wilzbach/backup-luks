@@ -74,12 +74,14 @@ while getopts "ruchkm" opt; do
 	u)
 	  echo "umounting $mountDir" >&2
 	  umountDir
+	  exit 0
       ;;
 	m)
 	  echo "mounting $mountDir" >&2
 	  umountDir
 	  mountCrypt
 	  mountContainer
+	  exit 0
 	  ;;
 	k)
 	  echo "SYNC MODE" 
