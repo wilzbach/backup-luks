@@ -67,7 +67,7 @@ Usage: $0 [options]
 EOF
 }
 
-while getopts "ruchkm" opt; do
+while getopts "ruchkml" opt; do
   case $opt in
     r)
       echo "remounting $mountDir" >&2
@@ -164,7 +164,7 @@ if [ -d "$syncDir" ] ; then
 	echo "" > "$logName"
 
 	# checking for incomplete backups
-	if [ -n $LOCKED ] ; then
+	if [[ $LOCKED ]] ; then
 		for file in $(ls -t "$syncDir" ) ; do 
 			if [ -e "$syncDir/$file/$locker" ] ; then 
 				echo "removing incomplete backup: $file"
@@ -172,7 +172,7 @@ if [ -d "$syncDir" ] ; then
 				echo "removed incomplete backup: $file"
 			fi
 		done
-		$LOCKED_ARG="--filter='P $locker"
+		LOCKED_ARG="--filter=P $locker"
 	fi
 
 	if [[ $withHardLinks ]] && [[ -z $NO_ROTATE ]] ; then
@@ -199,7 +199,7 @@ if [ -d "$syncDir" ] ; then
 	mkdir -p "$syncDirFull"
 
 	# lock the backup as incomplete
-	if [ -n $LOCKED ] ; then
+	if [[ $LOCKED ]] ; then
 		touch "$syncDirFull/$locker"
 	fi
 
@@ -209,7 +209,7 @@ if [ -d "$syncDir" ] ; then
 	# run without partial
 	/usr/bin/ionice -c 3 /usr/bin/nice -19 /usr/bin/rsync --archive --times  \
 	--links --perms -v --delete --quiet --log-file "$logName" --stats  \
-	$HARDLINKS $LOCKED_ARG \
+	$HARDLINKS "$LOCKED_ARG" \
 	--exclude-from "$EXCLUDE_FROM_FILE" --delete-excluded "$bakDir" $syncDirFull; 
 
 	# print stats
@@ -222,11 +222,16 @@ if [ -d "$syncDir" ] ; then
 		find /mnt -mount -printf '%P\n' | xargs -I {} mkdir -p "$syncDirFull/mnt/{}"
 	fi
 
-
 	# unlock the backup (=complete)
-	if [ -n $LOCKED ] ; then
+	if [[ $LOCKED ]] ; then
 		echo "removing lock from $syncDirFull/$locker"
 		rm "$syncDirFull/$locker"
+	fi
+
+	# check for rsync errors
+	if [[ $(grep "received SIGINT" "$logName") ]] ; then
+		echo "error in $syncDirFull"
+		touch "$syncDirFull/$locker"
 	fi
 
 	#### END: cleanup ######################
