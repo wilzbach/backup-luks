@@ -3,6 +3,7 @@
 
 export DISPLAY=:0
 NotifyPath="/usr/bin/notify-send"
+locker="incomplete.backup"
 
 #python2 -c 'import gtk; print gtk.icon_theme_get_default().lookup_icon("evolution", int('32'), ()).get_filename();'
 #ICON_NOTIFY=$(python -c "from gi.repository import Gtk; print(Gtk.IconTheme.get_default().lookup_icon('emblem-synchronizing', 48, Gtk.IconLookupFlags.USE_BUILTIN).get_filename());")
@@ -61,6 +62,7 @@ Usage: $0 [options]
 -u 		umounts the luks container
 -m 		mounts the luks container without rsync
 -k 		do not roate, sync to the newest existing folder
+-l 		lock the backup (will remove locked backup = incomplete backups)
 -c 		cron option (ignores error for non-available device)
 EOF
 }
@@ -90,6 +92,10 @@ while getopts "ruchkm" opt; do
 	c)
 	  echo "CRON MODE" 
 	  CRON=1
+	  ;;
+	l)
+	  echo "LOCK MODE (will remove old, locked backups)" 
+	  LOCKED=1
 	  ;;
 	h)
 	  help
@@ -157,6 +163,18 @@ notify(){
 if [ -d "$syncDir" ] ; then
 	echo "" > "$logName"
 
+	# checking for incomplete backups
+	if [ -n $LOCKED ] ; then
+		for file in $(ls -t "$syncDir" ) ; do 
+			if [ -e "$syncDir/$file/$locker" ] ; then 
+				echo "removing incomplete backup: $file"
+				rm -rf "$syncDir/$file"
+				echo "removed incomplete backup: $file"
+			fi
+		done
+		$LOCKED_ARG="--filter='P $locker"
+	fi
+
 	if [[ $withHardLinks ]] && [[ -z $NO_ROTATE ]] ; then
 		# rotate every month
 		rotatePattern=`date +"%Y-%m"`
@@ -180,13 +198,18 @@ if [ -d "$syncDir" ] ; then
 	syncDirFull="$syncDir/$bakFolder"
 	mkdir -p "$syncDirFull"
 
+	# lock the backup as incomplete
+	if [ -n $LOCKED ] ; then
+		touch "$syncDirFull/$locker"
+	fi
+
 	echo "Running rsync. DO NOT KILL"
 
 	# run without compression
 	# run without partial
 	/usr/bin/ionice -c 3 /usr/bin/nice -19 /usr/bin/rsync --archive --times  \
 	--links --perms -v --delete --quiet --log-file "$logName" --stats  \
-	$HARDLINKS \
+	$HARDLINKS $LOCKED_ARG \
 	--exclude-from "$EXCLUDE_FROM_FILE" --delete-excluded "$bakDir" $syncDirFull; 
 
 	# print stats
@@ -197,6 +220,13 @@ if [ -d "$syncDir" ] ; then
 	# restore mount points
 	if [[ "$bakDir" == "/" ]] ; then
 		find /mnt -mount -printf '%P\n' | xargs -I {} mkdir -p "$syncDirFull/mnt/{}"
+	fi
+
+
+	# unlock the backup (=complete)
+	if [ -n $LOCKED ] ; then
+		echo "removing lock from $syncDirFull/$locker"
+		rm "$syncDirFull/$locker"
 	fi
 
 	#### END: cleanup ######################
