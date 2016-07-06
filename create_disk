@@ -11,8 +11,13 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-if [[ ! -e $DEV_ENC  ]]; then
-	echo "your device does not exist"
+if [[ ! -e "$DEV_ENC"  ]]; then
+	echo "Your device does not exist" 1>&2
+	exit 1;
+fi
+
+if [[ -z "$SECURE_KEY"  ]]; then
+	echo "Please provide a location to store your secure key" 1>&2
 	exit 1;
 fi
 
@@ -39,7 +44,7 @@ if [ -t 0 ]; then
   echo
   pw_second=$(enterpw "Verify password")
   echo
-  
+
   if [[ $pw_first == $pw_second ]] ; then
   	PASSWORD=$pw_first
   else
